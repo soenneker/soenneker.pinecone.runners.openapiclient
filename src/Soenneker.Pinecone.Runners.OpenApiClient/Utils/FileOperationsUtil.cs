@@ -17,6 +17,7 @@ using Soenneker.Kiota.Util.Abstract;
 using Soenneker.Utils.Directory.Abstract;
 using Soenneker.Utils.File.Abstract;
 using System.Collections.Generic;
+using Soenneker.OpenApi.Fixer;
 using Soenneker.Utils.Yaml.Abstract;
 
 namespace Soenneker.Pinecone.Runners.OpenApiClient.Utils;
@@ -74,7 +75,8 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
 
         string fixedFilePath = Path.Combine(gitDirectory, "fixed.json");
         await _fileUtil.DeleteIfExists(fixedFilePath, cancellationToken: cancellationToken);
-        await _openApiFixer.Fix(targetFilePath, fixedFilePath, cancellationToken).NoSync();
+        await _openApiFixer.Fix(targetFilePath, fixedFilePath, new OpenApiFixerOptions { StripDateSuffixesFromGeneratedNames = true }, cancellationToken)
+                           .NoSync();
 
         await _kiotaUtil.EnsureInstalled(cancellationToken);
 
