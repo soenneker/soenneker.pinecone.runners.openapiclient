@@ -29,7 +29,7 @@
         <PackageReference Include="Soenneker.Kiota.Util" Version="4.0.78" />
         <PackageReference Include="Soenneker.Managers.Runners" Version="4.0.2331" />
         <PackageReference Include="Soenneker.OpenApi.Fixer" Version="4.0.290" />
-        <PackageReference Include="Soenneker.OpenApi.Merger" Version="4.0.85" />
+        <PackageReference Include="Soenneker.OpenApi.Merger" Version="4.0.86" />
         <PackageReference Include="Soenneker.Utils.Yaml" Version="4.0.120" />
     </ItemGroup>
 </Project>
