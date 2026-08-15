@@ -28,7 +28,7 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
         <PackageReference Include="Soenneker.Kiota.Util" Version="4.0.82" />
         <PackageReference Include="Soenneker.Managers.Runners" Version="4.0.2362" />
-        <PackageReference Include="Soenneker.OpenApi.Fixer" Version="4.0.297" />
+        <PackageReference Include="Soenneker.OpenApi.Fixer" Version="4.0.300" />
         <PackageReference Include="Soenneker.OpenApi.Merger" Version="4.0.89" />
         <PackageReference Include="Soenneker.Utils.Yaml" Version="4.0.128" />
     </ItemGroup>
