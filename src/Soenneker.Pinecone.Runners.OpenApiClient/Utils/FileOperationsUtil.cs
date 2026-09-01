@@ -16,6 +16,7 @@ using Soenneker.Extensions.ValueTask;
 using Soenneker.Kiota.Util.Abstract;
 using Soenneker.Utils.Directory.Abstract;
 using Soenneker.Utils.File.Abstract;
+using Soenneker.Utils.Path.Abstract;
 using System.Collections.Generic;
 using Soenneker.OpenApi.Fixer;
 using Soenneker.Utils.Yaml.Abstract;
@@ -33,12 +34,13 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
     private readonly IKiotaUtil _kiotaUtil;
     private readonly IFileUtil _fileUtil;
     private readonly IDirectoryUtil _directoryUtil;
+    private readonly IPathUtil _pathUtil;
     private readonly IOpenApiMerger _openApiMerger;
     private readonly IOpenApiFixer _openApiFixer;
     private readonly IYamlUtil _yamlUtil;
 
     public FileOperationsUtil(ILogger<FileOperationsUtil> logger, IGitUtil gitUtil, IDotnetUtil dotnetUtil, IFileUtil fileUtil, IDirectoryUtil directoryUtil,
-        IOpenApiMerger openApiMerger, IYamlUtil yamlUtil, IKiotaUtil kiotaUtil, IOpenApiFixer openApiFixer)
+        IPathUtil pathUtil, IOpenApiMerger openApiMerger, IYamlUtil yamlUtil, IKiotaUtil kiotaUtil, IOpenApiFixer openApiFixer)
     {
         _logger = logger;
         _gitUtil = gitUtil;
@@ -46,6 +48,7 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
         _kiotaUtil = kiotaUtil;
         _fileUtil = fileUtil;
         _directoryUtil = directoryUtil;
+        _pathUtil = pathUtil;
         _openApiMerger = openApiMerger;
         _openApiFixer = openApiFixer;
         _yamlUtil = yamlUtil;
@@ -62,7 +65,7 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
 
         string pineconeApiDirectory = await _gitUtil.CloneToTempDirectory(_pineconeApiGitUrl, cancellationToken: cancellationToken);
 
-        string latestSpecDirectory = GetLatestSpecDirectory(pineconeApiDirectory);
+        string latestSpecDirectory = await GetLatestSpecDirectory(pineconeApiDirectory, cancellationToken).NoSync();
 
         _logger.LogInformation("Using Pinecone OpenAPI directory: {Directory}", latestSpecDirectory);
 
@@ -89,10 +92,10 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
         await BuildAndPush(gitDirectory, cancellationToken).NoSync();
     }
 
-    private static string GetLatestSpecDirectory(string repositoryDirectory)
+    private async ValueTask<string> GetLatestSpecDirectory(string repositoryDirectory, CancellationToken cancellationToken)
     {
-        string[] directories = Directory.GetDirectories(repositoryDirectory).Where(IsVersionDirectory)
-                                        .OrderByDescending(Path.GetFileName, StringComparer.Ordinal).ToArray();
+        List<string> allDirectories = await _directoryUtil.GetAllDirectories(repositoryDirectory, cancellationToken).NoSync();
+        string[] directories = allDirectories.Where(IsVersionDirectory).OrderByDescending(Path.GetFileName, StringComparer.Ordinal).ToArray();
 
         if (directories.Length == 0)
             throw new InvalidOperationException($"No Pinecone OpenAPI version directories were found in '{repositoryDirectory}'.");
@@ -110,11 +113,10 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
 
     private async ValueTask<string> ConvertOasYamlFilesToJson(string sourceDirectory, CancellationToken cancellationToken)
     {
-        string jsonDirectory = Path.Combine(Path.GetTempPath(), $"pinecone-openapi-json-{Guid.NewGuid():N}");
+        string jsonDirectory = await _pathUtil.GetUniqueTempDirectory("pinecone-openapi-json", cancellationToken: cancellationToken).NoSync();
 
-        await _directoryUtil.Create(jsonDirectory, false, cancellationToken);
-
-        string[] filePaths = Directory.GetFiles(sourceDirectory, "*.oas.yaml", SearchOption.TopDirectoryOnly)
+        List<string> yamlFiles = await _directoryUtil.GetFilesByExtension(sourceDirectory, ".yaml", recursive: false, cancellationToken).NoSync();
+        string[] filePaths = yamlFiles.Where(static path => path.EndsWith(".oas.yaml", StringComparison.OrdinalIgnoreCase))
                                       .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase).ToArray();
 
         if (filePaths.Length == 0)
