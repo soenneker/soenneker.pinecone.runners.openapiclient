@@ -71,6 +71,8 @@ public sealed class FileOperationsUtil : IFileOperationsUtil
 
         string jsonDirectory = await ConvertOasYamlFilesToJson(latestSpecDirectory, cancellationToken);
 
+        await _openApiFixer.FixOperationLinks(jsonDirectory, cancellationToken).NoSync();
+
         OpenApiDocument merged = await _openApiMerger.MergeDirectory(jsonDirectory, cancellationToken).NoSync();
         string json = _openApiMerger.ToJson(merged);
 
